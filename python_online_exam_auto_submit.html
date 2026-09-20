@@ -158,7 +158,7 @@ submitted_at:new Date().toLocaleString()
 console.log("Email sent successfully");
 }).catch(function(error){
 console.error("EmailJS error:",error);
-alert("Result calculated, but email could not be sent.");
+alert("EmailJS error: " + JSON.stringify(error));
 });
   document.getElementById('warning').style.display=message?'block':'none';
   document.getElementById('warning').textContent=message;
