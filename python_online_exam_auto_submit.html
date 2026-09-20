@@ -151,9 +151,14 @@ correct:correct,
 wrong:wrong,
 unanswered:notAttempted,
 score:score,
-status:violation?"Auto-submitted":"Submitted",
+status:"Submitted",
 violations:violation?"Yes":"No",
 submitted_at:new Date().toLocaleString()
+}).then(function(){
+console.log("Email sent successfully");
+}).catch(function(error){
+console.error("EmailJS error:",error);
+alert("Result calculated, but email could not be sent.");
 });
   document.getElementById('warning').style.display=message?'block':'none';
   document.getElementById('warning').textContent=message;
