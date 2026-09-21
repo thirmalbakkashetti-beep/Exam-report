@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DSA Online Exam</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px}
+.container{max-width:850px;margin:auto}
+.card{background:white;padding:18px;margin:12px 0;border-radius:10px;box-shadow:0 2px 8px #ddd}
+h1{text-align:center}
+input{width:100%;padding:12px;box-sizing:border-box;margin:7px 0 12px;border:1px solid #ccc;border-radius:6px}
+button{padding:13px 20px;border:0;border-radius:8px;cursor:pointer}
+#startBtn,#submitBtn{width:100%;background:#222;color:white;font-size:16px}
+.option{display:block;margin:8px 0;padding:10px;background:#f1f3f5;border-radius:7px}
+.correct{background:#c8f7c5!important}
+.wrong{background:#ffd0d0!important}
+#result{display:none}
+.warning{font-weight:bold}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>DSA Online Exam</h1>
+<div id="startCard" class="card">
+<label>Student Name</label>
+<input id="studentName" required>
+<label>Student Email</label>
+<input id="studentEmail" type="email" required>
+<button id="startBtn" onclick="startExam()">Start Exam</button>
+</div>
+<div id="exam" style="display:none">
+<div class="card warning">50 random questions • +2 correct • -1 wrong • 0 unanswered • Auto-submit after 5 violations</div>
+<div id="questions"></div>
+<div class="card">
+<button id="submitBtn" onclick="submitExam('Manually submitted')">Submit Exam</button>
+</div>
+</div>
+<div id="result" class="card"></div>
+<div id="mailStatus" class="card"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+emailjs.init({publicKey:"t_1EZrJXF2twbrG-P"});
+const MAX_VIOLATIONS=5;
+let violations=0,submitted=false,started=false,questions=[];
+const bank=[{"q": "Which data structure follows LIFO order?", "o": ["Queue", "Stack", "Array", "Graph"], "a": 1}, {"q": "Which data structure follows FIFO order?", "o": ["Stack", "Queue", "Tree", "Heap"], "a": 1}, {"q": "What is the time complexity of accessing an array element by index?", "o": ["O(1)", "O(log n)", "O(n)", "O(n log n)"], "a": 0}, {"q": "Which operation adds an element to the top of a stack?", "o": ["Enqueue", "Push", "Pop", "Insert"], "a": 1}, {"q": "Which operation removes an element from a stack?", "o": ["Push", "Pop", "Peek", "Enqueue"], "a": 1}, {"q": "Which operation adds an element to a queue?", "o": ["Push", "Pop", "Enqueue", "Peek"], "a": 2}, {"q": "Which operation removes an element from a queue?", "o": ["Dequeue", "Push", "Enqueue", "Insert"], "a": 0}, {"q": "Which data structure is commonly used for BFS?", "o": ["Stack", "Queue", "Heap", "Array"], "a": 1}, {"q": "Which data structure is commonly used for DFS?", "o": ["Queue", "Stack", "Hash table", "Heap"], "a": 1}, {"q": "What is the worst-case time complexity of linear search?", "o": ["O(1)", "O(log n)", "O(n)", "O(n log n)"], "a": 2}, {"q": "Binary search requires the data to be:", "o": ["Random", "Sorted", "Duplicated", "Hashed"], "a": 1}, {"q": "What is the worst-case time complexity of binary search?", "o": ["O(n)", "O(log n)", "O(n log n)", "O(1)"], "a": 1}, {"q": "What is the worst-case time complexity of bubble sort?", "o": ["O(n)", "O(log n)", "O(n²)", "O(1)"], "a": 2}, {"q": "What is the average time complexity of quicksort?", "o": ["O(n)", "O(log n)", "O(n log n)", "O(n²)"], "a": 2}, {"q": "What is the worst-case time complexity of quicksort?", "o": ["O(n)", "O(n log n)", "O(n²)", "O(log n)"], "a": 2}, {"q": "What is the time complexity of merge sort?", "o": ["O(n²)", "O(n log n)", "O(log n)", "O(n)"], "a": 1}, {"q": "Which sorting algorithm is stable by standard implementation?", "o": ["Merge sort", "Heap sort", "Selection sort", "Quick sort"], "a": 0}, {"q": "Which sorting algorithm repeatedly selects the minimum element?", "o": ["Bubble sort", "Insertion sort", "Selection sort", "Merge sort"], "a": 2}, {"q": "Which sorting algorithm builds the sorted portion one element at a time?", "o": ["Insertion sort", "Heap sort", "Merge sort", "Selection sort"], "a": 0}, {"q": "A linked list node usually contains:", "o": ["Only data", "Only a pointer", "Data and link/pointer", "Only an index"], "a": 2}, {"q": "Which linked list allows traversal in both directions?", "o": ["Singly linked list", "Doubly linked list", "Circular queue", "Stack"], "a": 1}, {"q": "In a circular linked list, the last node points to:", "o": ["NULL", "The first node", "The middle node", "Itself always"], "a": 1}, {"q": "What is the usual time complexity of inserting at the beginning of a linked list?", "o": ["O(1)", "O(log n)", "O(n)", "O(n²)"], "a": 0}, {"q": "What is the root node of a tree?", "o": ["The bottom node", "The first/top node", "Any leaf", "The largest node"], "a": 1}, {"q": "A node with no children is called:", "o": ["Root", "Parent", "Leaf", "Sibling"], "a": 2}, {"q": "A tree with at most two children per node is a:", "o": ["B-tree", "Binary tree", "AVL list", "Heap list"], "a": 1}, {"q": "In a binary search tree, values in the left subtree are generally:", "o": ["Greater than the node", "Less than the node", "Equal only", "Random"], "a": 1}, {"q": "Which traversal of a BST produces sorted order?", "o": ["Preorder", "Postorder", "Inorder", "Level order"], "a": 2}, {"q": "Which traversal visits root, left subtree, then right subtree?", "o": ["Inorder", "Preorder", "Postorder", "Level order"], "a": 1}, {"q": "Which traversal visits left subtree, right subtree, then root?", "o": ["Preorder", "Inorder", "Postorder", "Level order"], "a": 2}, {"q": "A tree in which every level is filled except possibly the last is:", "o": ["Complete binary tree", "Skewed tree", "Forest", "Graph"], "a": 0}, {"q": "What is the maximum number of children of a binary tree node?", "o": ["1", "2", "3", "Unlimited"], "a": 1}, {"q": "A graph consists mainly of:", "o": ["Nodes and edges", "Arrays and indexes", "Stacks and queues", "Roots and leaves"], "a": 0}, {"q": "A graph with direction on its edges is called:", "o": ["Undirected graph", "Directed graph", "Complete tree", "Binary graph"], "a": 1}, {"q": "A graph with no repeated edge between the same pair of vertices is commonly called:", "o": ["Simple graph", "Stack graph", "Heap graph", "Linear graph"], "a": 0}, {"q": "Which algorithm finds shortest paths from a source in a graph with non-negative edge weights?", "o": ["Dijkstra's algorithm", "DFS", "Binary search", "Bubble sort"], "a": 0}, {"q": "Which algorithm is commonly used to find a minimum spanning tree?", "o": ["Merge sort", "Kruskal's algorithm", "Binary search", "KMP"], "a": 1}, {"q": "What does BFS stand for?", "o": ["Binary File Search", "Breadth-First Search", "Best First Sort", "Backtracking File Search"], "a": 1}, {"q": "What does DFS stand for?", "o": ["Depth-First Search", "Data File Search", "Direct First Sort", "Depth File System"], "a": 0}, {"q": "Which data structure is useful for implementing recursion?", "o": ["Queue", "Stack", "Heap", "Graph"], "a": 1}, {"q": "What is recursion?", "o": ["A function calling itself", "Sorting an array", "Deleting a node", "Hashing a key"], "a": 0}, {"q": "A base case in recursion is used to:", "o": ["Start a loop", "Stop recursive calls", "Sort data", "Create a graph"], "a": 1}, {"q": "What is the purpose of a hash table?", "o": ["Fast key-value lookup", "Always sort data", "Store only trees", "Perform recursion"], "a": 0}, {"q": "Average-case lookup in a well-designed hash table is approximately:", "o": ["O(1)", "O(n²)", "O(log n)", "O(n log n)"], "a": 0}, {"q": "A collision in hashing occurs when:", "o": ["Two keys map to the same index", "A key is deleted", "The table is empty", "A value is sorted"], "a": 0}, {"q": "Which is a common collision-resolution technique?", "o": ["Chaining", "Recursion only", "Binary traversal", "Merging"], "a": 0}, {"q": "A heap is commonly used to implement a:", "o": ["Priority queue", "Linked list", "Graph edge", "Hash function"], "a": 0}, {"q": "In a min-heap, the root contains the:", "o": ["Largest element", "Smallest element", "Middle element", "Last inserted element"], "a": 1}, {"q": "In a max-heap, the root contains the:", "o": ["Smallest element", "Largest element", "Random element", "First leaf"], "a": 1}, {"q": "What is the typical time complexity of inserting into a binary heap?", "o": ["O(1)", "O(log n)", "O(n)", "O(n²)"], "a": 1}, {"q": "What is the typical time complexity of extracting the minimum from a min-heap?", "o": ["O(1)", "O(log n)", "O(n)", "O(n²)"], "a": 1}, {"q": "Dynamic programming is mainly based on:", "o": ["Overlapping subproblems and optimal substructure", "Only sorting", "Only recursion without storage", "Randomization"], "a": 0}, {"q": "Memoization is a technique that:", "o": ["Stores results of subproblems", "Deletes duplicate data", "Sorts a graph", "Creates a queue"], "a": 0}, {"q": "Which problem is a classic dynamic programming problem?", "o": ["0/1 Knapsack", "Linear search", "Stack push", "Queue dequeue"], "a": 0}, {"q": "What is a greedy algorithm?", "o": ["An algorithm that makes a locally optimal choice at each step", "An algorithm that always uses recursion", "An algorithm that never uses arrays", "An algorithm that sorts only"], "a": 0}, {"q": "Which is a classic greedy algorithm?", "o": ["Activity selection", "Binary search", "Merge sort", "DFS"], "a": 0}, {"q": "What is Big-O notation used to describe?", "o": ["Growth of time or space requirements", "Variable names", "Program output only", "Compiler errors"], "a": 0}, {"q": "Which complexity grows fastest among these for large n?", "o": ["O(log n)", "O(n)", "O(n log n)", "O(n²)"], "a": 3}, {"q": "Which complexity is constant time?", "o": ["O(1)", "O(n)", "O(log n)", "O(n²)"], "a": 0}, {"q": "What is an adjacency matrix used to represent?", "o": ["A graph", "A stack", "A linked list", "A heap"], "a": 0}, {"q": "What is an adjacency list used to represent?", "o": ["A graph", "Only an array", "Only a tree root", "A scalar variable"], "a": 0}, {"q": "Topological sorting is applicable to:", "o": ["Directed acyclic graphs", "Any stack", "Unsorted arrays only", "Circular linked lists"], "a": 0}, {"q": "What does DAG stand for?", "o": ["Directed Acyclic Graph", "Data Array Graph", "Direct Access Grid", "Dynamic Array Group"], "a": 0}, {"q": "Which technique is commonly used to solve the N-Queens problem?", "o": ["Backtracking", "Hashing only", "Bubble sort", "Binary search"], "a": 0}, {"q": "Backtracking works by:", "o": ["Exploring choices and undoing choices when needed", "Always choosing the largest value", "Only using queues", "Sorting before every step"], "a": 0}, {"q": "What is the space complexity of an array storing n elements?", "o": ["O(1)", "O(log n)", "O(n)", "O(n²)"], "a": 2}, {"q": "Which data structure is best suited for undo operations?", "o": ["Stack", "Queue", "Graph", "Heap"], "a": 0}, {"q": "Which data structure is commonly used for printer job scheduling?", "o": ["Queue", "Stack", "Binary tree", "Hash table"], "a": 0}, {"q": "What is the main advantage of a linked list over an array?", "o": ["Dynamic size and easy insertion/deletion with a node reference", "Always O(1) random access", "Always uses less memory", "It is always sorted"], "a": 0}, {"q": "What is a deque?", "o": ["A double-ended queue", "A double-ended stack only", "A graph traversal", "A sorting method"], "a": 0}, {"q": "Which structure can support insertion and deletion at both ends?", "o": ["Deque", "Binary search tree", "Hash table", "Heap only"], "a": 0}, {"q": "What is the height of a tree?", "o": ["Number of edges on the longest root-to-leaf path", "Number of nodes at root", "Total number of graphs", "Number of leaves only"], "a": 0}, {"q": "What is a balanced tree intended to keep small?", "o": ["Height", "Number of values", "Root size", "Number of arrays"], "a": 0}, {"q": "AVL trees maintain balance using:", "o": ["Rotations", "Hashing", "Queue operations", "Linear search"], "a": 0}, {"q": "Which traversal is commonly used to copy a tree structure?", "o": ["Preorder", "Only inorder", "Only level order", "Only postorder"], "a": 0}, {"q": "Which sorting algorithm has O(n log n) worst-case complexity and uses a heap?", "o": ["Heap sort", "Bubble sort", "Selection sort", "Insertion sort"], "a": 0}];
+
+function shuffle(a){
+for(let i=a.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[a[i],a[j]]=[a[j],a[i]];
+}
+return a;
+}
+
+function startExam(){
+const n=document.getElementById("studentName").value.trim();
+const emailValue=document.getElementById("studentEmail").value.trim();
+if(!n||!emailValue){alert("Enter name and email");return;}
+questions=shuffle([...bank]).slice(0,50);
+started=true;
+document.getElementById("startCard").style.display="none";
+document.getElementById("exam").style.display="block";
+renderQuestions();
+if(document.documentElement.requestFullscreen){
+document.documentElement.requestFullscreen().catch(()=>{});
+}
+}
+
+function renderQuestions(){
+const box=document.getElementById("questions");
+box.innerHTML="";
+questions.forEach((x,i)=>{
+let s='<div class="card"><b>'+ (i+1)+'. '+x.q+'</b>';
+x.o.forEach((o,j)=>{
+s+='<label class="option"><input type="radio" name="q'+i+'" value="'+j+'"> '+o+'</label>';
+});
+s+='</div>';
+box.innerHTML+=s;
+});
+}
+
+function recordViolation(reason){
+if(submitted||!started)return;
+violations++;
+if(violations>=MAX_VIOLATIONS){
+submitExam("Auto-submitted after 5 violations");
+}
+}
+
+document.addEventListener("visibilitychange",()=>{
+if(document.hidden)recordViolation("Tab/app switch / external overlay");
+});
+window.addEventListener("blur",()=>{
+if(started&&!submitted)recordViolation("External overlay or app switch");
+});
+document.addEventListener("fullscreenchange",()=>{
+if(started&&!document.fullscreenElement)recordViolation("Full-screen exited");
+});
+
+async function submitExam(status){
+if(submitted)return;
+submitted=true;
+let correct=0,wrong=0,unanswered=0;
+questions.forEach((x,i)=>{
+const el=document.querySelector('input[name="q'+i+'"]:checked');
+if(!el)unanswered++;
+else if(Number(el.value)===x.a)correct++;
+else wrong++;
+});
+const score=correct*2-wrong;
+const name=document.getElementById("studentName").value.trim();
+let attemptedTest="";
+let originalKey="";
+questions.forEach((x,i)=>{
+const selected=document.querySelector('input[name="q'+i+'"]:checked');
+const selectedText=selected?x.o[Number(selected.value)]:"Not Attempted";
+const correctText=x.o[x.a];
+const result=selected?(Number(selected.value)===x.a?"Correct":"Wrong"):"Not Attempted";
+attemptedTest+="Q"+(i+1)+". "+x.q+"\\nYour Answer: "+selectedText+"\\nResult: "+result+"\\n\\n";
+originalKey+="Q"+(i+1)+". "+x.q+"\\nCorrect Answer: "+correctText+"\\n\\n";
+});
+const name=document.getElementById("studentName").value.trim();
+let review="";
+questions.forEach((x,i)=>{
+const selected=document.querySelector('input[name="q'+i+'"]:checked');
+const selectedText=selected?x.o[Number(selected.value)]:"Not Attempted";
+const correctText=x.o[x.a];
+const result=selected?(Number(selected.value)===x.a?"Correct":"Wrong"):"Not Attempted";
+review+="Q"+(i+1)+". "+x.q+"\\nStudent Answer: "+selectedText+"\\nCorrect Answer: "+correctText+"\\nResult: "+result+"\\n\\n";
+});
+const email=document.getElementById("studentEmail").value.trim();
+document.getElementById("exam").style.display="none";
+document.getElementById("result").style.display="block";
+document.getElementById("result").innerHTML='<h2>Exam Result</h2><p>Correct: '+correct+'</p><p>Wrong: '+wrong+'</p><p>Not Attempted: '+unanswered+'</p><p>Score: '+score+'/100</p><p>Status: '+status+'</p><p>Violations: '+violations+'</p>';
+try{
+await emailjs.send("service_6ojgshw","template_4tztjhk",{
+name:name,
+exam_name:"DSA Online Exam",
+email:email,
+correct:String(correct),
+wrong:String(wrong),
+unanswered:String(unanswered),
+score:String(score),
+status:status,
+violations:String(violations),
+submitted_at:new Date().toLocaleString(),
+attempted_test:attemptedTest,\noriginal_key:originalKey
+});
+document.getElementById("mailStatus").innerHTML="<b>Report sent successfully.</b>";
+}catch(err){
+document.getElementById("mailStatus").innerHTML="<b>Report sending failed.</b><br>"+JSON.stringify(err);
+}
+}
+</script>
+</body>
+</html>
